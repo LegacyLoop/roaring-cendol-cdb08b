@@ -6,7 +6,7 @@ exports.handler = async function (event) {
     const { imageBase64, prompt } = JSON.parse(event.body);
 
     const response = await openai.chat.completions.create({
-  model "gpot-4o",  
+  model "gpot-4oo
       messages: [
         { roleo "user", content: prompt },
         {

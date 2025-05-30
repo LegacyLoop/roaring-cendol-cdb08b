@@ -1,76 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Estate Item Analyzer</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    #drop-area { border: 2px dashed #ccc; padding: 40px; text-align: center; }
-    #analyze-btn { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
-    #spinner { display:none; margin-top:20px; }
-    #results { margin-top:20px; display:none; }
-    #error { color:red; margin-top:20px; display:none; }
-  </style>
+<meta charset="UTF-8">
+<title>LegacyLoop AI Demo - Estate Item Analyzer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+  --primary-start:#4e54c8;
+  --primary-end:#8f94fb;
+}
+html,body{
+  margin:0;
+  padding:0;
+  min-height:800px;
+  height:100%;
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:linear-gradient(135deg,var(--primary-start),var(--primary-end));
+  color:#fff;
+}
+.container{
+  max-width:600px;
+  margin:0 auto;
+  padding:40px 20px;
+  box-sizing:border-box;
+}
+h1{
+  text-align:center;
+  margin-bottom:30px;
+  font-size:1.8rem;
+}
+#drop-area{
+  border:2px dashed rgba(255,255,255,0.6);
+  border-radius:12px;
+  padding:40px 20px;
+  text-align:center;
+  transition:background 0.3s;
+}
+#drop-area.dragover{background:rgba(255,255,255,0.1);}
+#fileElem{display:none;}
+#analyze-btn{
+  margin-top:25px;
+  padding:12px 28px;
+  font-size:1rem;
+  border:none;
+  border-radius:30px;
+  background:#fff;
+  color:var(--primary-start);
+  font-weight:bold;
+  cursor:pointer;
+  transition:opacity .3s;
+}
+#analyze-btn:disabled{opacity:0.5;cursor:not-allowed;}
+#spinner{
+  display:none;
+  margin:20px auto;
+  border:4px solid rgba(255,255,255,0.3);
+  border-top:4px solid #fff;
+  border-radius:50%;
+  width:40px;
+  height:40px;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+#results,#error{
+  margin-top:30px;
+  background:rgba(0,0,0,0.2);
+  padding:20px;
+  border-radius:12px;
+}
+.result-label{font-weight:bold;}
+@media (max-width:600px){.container{padding:20px 15px;}}
+</style>
 </head>
 <body>
-  <h1>Estate Item Analyzer</h1>
+<div class="container">
+  <h1>LegacyLoop AI Demo - Estate Item Analyzer</h1>
   <div id="drop-area">
-    <p>Drag & drop an image here or <input type="file" accept="image/*" onchange="handleFiles(this.files)"> select a file.</p>
+    <p>Drag & drop an image here, or <label style="text-decoration:underline;cursor:pointer;"><input type="file" id="fileElem" accept="image/*">browse</label></p>
   </div>
-  <button id="analyze-btn" onclick="analyzeItem()">Analyze</button>
-  <div id="spinner">Processing...</div>
-  <div id="error"></div>
-  <div id="results"></div>
-
-  <script>
-  let uploadedImageBase64 = '';
-
-  function handleFiles(files) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      uploadedImageBase64 = e.target.result.split(',')[1];
-      document.getElementById('drop-area').innerHTML = `<p><strong>File loaded:</strong> ${files[0].name}</p>`;
-    };
-    reader.readAsDataURL(files[0]);
+  <button id="analyze-btn" onclick="analyzeItem()" disabled>Analyze Item</button>
+  <div id="spinner"></div>
+  <div id="error" style="display:none;"></div>
+  <div id="results" style="display:none;">
+    <h2>Analysis Results</h2>
+    <p class="result-label">Item Name:</p><p id="r-name">Vintage Lamp</p>
+    <p class="result-label">Category:</p><p id="r-category">Collectibles</p>
+    <p class="result-label">Estimated Value:</p><p id="r-value">$120 - $150</p>
+    <p class="result-label">Confidence:</p><p id="r-confidence">0.82</p>
+    <p class="result-label">Description:</p><p id="r-desc">A mid‑century brass desk lamp in good condition with minor patina...</p>
+  </div>
+</div>
+<script>
+let uploadedImageBase64='';
+const dropArea=document.getElementById('drop-area');
+const fileInput=document.getElementById('fileElem');
+const analyzeBtn=document.getElementById('analyze-btn');
+['dragenter','dragover'].forEach(evt=>{
+  dropArea.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation();dropArea.classList.add('dragover');},false);
+});
+['dragleave','drop'].forEach(evt=>{
+  dropArea.addEventListener(evt,e=>{e.preventDefault();e.stopPropagation();dropArea.classList.remove('dragover');},false);
+});
+dropArea.addEventListener('drop',e=>{const dt=e.dataTransfer;if(dt.files&&dt.files[0])handleFiles(dt.files);});
+fileInput.addEventListener('change',e=>handleFiles(e.target.files));
+dropArea.addEventListener('click',()=>fileInput.click());
+function handleFiles(files){const file=files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{uploadedImageBase64=e.target.result.split(',')[1];dropArea.innerHTML=`<p><strong>Loaded:</strong> ${file.name}</p>`;analyzeBtn.disabled=false;};reader.readAsDataURL(file);} 
+async function analyzeItem(){
+  const resultsDiv=document.getElementById('results');
+  const errorDiv=document.getElementById('error');
+  const spinner=document.getElementById('spinner');
+  resultsDiv.style.display='none';
+  errorDiv.style.display='none';
+  spinner.style.display='block';
+  analyzeBtn.disabled=true;
+  if(!uploadedImageBase64){
+    spinner.style.display='none';
+    errorDiv.textContent='Please upload an image first.';
+    errorDiv.style.display='block';
+    analyzeBtn.disabled=false;
+    return;
   }
-
-  async function analyzeItem() {
-    const resultsDiv = document.getElementById('results');
-    const errorDiv = document.getElementById('error');
-    const spinner = document.getElementById('spinner');
-
-    resultsDiv.style.display = 'none';
-    errorDiv.style.display = 'none';
-    spinner.style.display = 'block';
-
-    if (!uploadedImageBase64) {
-      spinner.style.display = 'none';
-      errorDiv.innerText = 'Please upload an image first.';
-      errorDiv.style.display = 'block';
-      return;
+  try{
+    const response=await fetch('/.netlify/functions/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        imageBase64:uploadedImageBase64,
+        prompt:`Identify this estate item and provide:\n- Item Name\n- Category\n- Description\n- Condition Assessment\n- Age Estimate\nReturn the result as JSON with keys: name, category, description, condition, age, estimated_value, confidence.`
+      })
+    });
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||'Something went wrong');
+    let resultObj;
+    if(typeof data.result==='string'){
+      try{resultObj=JSON.parse(data.result);}catch{resultObj=null;}
+    }else{resultObj=data.result;}
+    if(!resultObj) throw new Error('Invalid response format');
+    document.getElementById('r-name').textContent=resultObj.name||'N/A';
+    document.getElementById('r-category').textContent=resultObj.category||'N/A';
+    document.getElementById('r-value').textContent=resultObj.estimated_value||'N/A';
+    document.getElementById('r-confidence').textContent=resultObj.confidence||'N/A';
+    document.getElementById('r-desc').textContent=resultObj.description||'N/A';
+    resultsDiv.style.display='block';
+    if(window.parent&&window.parent!==window){
+      window.parent.postMessage({type:'legacyloop-result',data:resultObj},'*');
     }
-
-    try {
-      const response = await fetch("/.netlify/functions/analyze", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: uploadedImageBase64,
-          prompt: `Please identify this estate item and provide:\n- Item Name\n- Category\n- Description\n- Condition Assessment\n- Age Estimate`
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Something went wrong');
-      resultsDiv.innerHTML = `<h2>AI Analysis Results</h2><p>${data.result.replace(/\n/g, '<br>')}</p>`;
-      resultsDiv.style.display = 'block';
-    } catch (err) {
-      errorDiv.innerText = `Error: ${err.message}`;
-      errorDiv.style.display = 'block';
-    } finally {
-      spinner.style.display = 'none';
-    }
+  }catch(err){
+    errorDiv.textContent='Error: '+err.message;
+    errorDiv.style.display='block';
+  }finally{
+    spinner.style.display='none';
+    analyzeBtn.disabled=false;
   }
-  </script>
+}
+</script>
 </body>
 </html>

@@ -8,7 +8,7 @@ exports.handler = async function (event) {
     const response = await openai.chat.completions.create({
   model "gpot-4o",  
       messages: [
-        { role: "user", content: prompt },
+        { roleo "user", content: prompt },
         {
           role: "user",
           content: [

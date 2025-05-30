@@ -28,10 +28,12 @@ exports.handler = async function (event) {
       statusCode: 200,
       body: JSON.stringify({ result: response.choices[0].message.content }),
     };
-  } catch (err) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
-    };
+} catch (err) {
+  console.error("OpenAI API Error:", err); // ✅ show full error in Netlify logs
+  return {
+    statusCode: 500,
+    body: JSON.stringify({ error: err.message || "Unknown error occurred." }),
+  };
+}
   }
 };

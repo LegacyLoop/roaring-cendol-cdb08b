@@ -2,10 +2,75 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Demo App</title>
+  <title>Estate Item Analyzer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    #drop-area { border: 2px dashed #ccc; padding: 40px; text-align: center; }
+    #analyze-btn { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
+    #spinner { display:none; margin-top:20px; }
+    #results { margin-top:20px; display:none; }
+    #error { color:red; margin-top:20px; display:none; }
+  </style>
 </head>
 <body>
-  <h1>Demo App is Running</h1>
-  <p>This site hosts the serverless function <code>/.netlify/functions/analyze</code>.</p>
+  <h1>Estate Item Analyzer</h1>
+  <div id="drop-area">
+    <p>Drag & drop an image here or <input type="file" accept="image/*" onchange="handleFiles(this.files)"> select a file.</p>
+  </div>
+  <button id="analyze-btn" onclick="analyzeItem()">Analyze</button>
+  <div id="spinner">Processing...</div>
+  <div id="error"></div>
+  <div id="results"></div>
+
+  <script>
+  let uploadedImageBase64 = '';
+
+  function handleFiles(files) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      uploadedImageBase64 = e.target.result.split(',')[1];
+      document.getElementById('drop-area').innerHTML = `<p><strong>File loaded:</strong> ${files[0].name}</p>`;
+    };
+    reader.readAsDataURL(files[0]);
+  }
+
+  async function analyzeItem() {
+    const resultsDiv = document.getElementById('results');
+    const errorDiv = document.getElementById('error');
+    const spinner = document.getElementById('spinner');
+
+    resultsDiv.style.display = 'none';
+    errorDiv.style.display = 'none';
+    spinner.style.display = 'block';
+
+    if (!uploadedImageBase64) {
+      spinner.style.display = 'none';
+      errorDiv.innerText = 'Please upload an image first.';
+      errorDiv.style.display = 'block';
+      return;
+    }
+
+    try {
+      const response = await fetch("/.netlify/functions/analyze", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: uploadedImageBase64,
+          prompt: `Please identify this estate item and provide:\n- Item Name\n- Category\n- Description\n- Condition Assessment\n- Age Estimate`
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Something went wrong');
+      resultsDiv.innerHTML = `<h2>AI Analysis Results</h2><p>${data.result.replace(/\n/g, '<br>')}</p>`;
+      resultsDiv.style.display = 'block';
+    } catch (err) {
+      errorDiv.innerText = `Error: ${err.message}`;
+      errorDiv.style.display = 'block';
+    } finally {
+      spinner.style.display = 'none';
+    }
+  }
+  </script>
 </body>
 </html>

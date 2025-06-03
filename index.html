@@ -588,7 +588,14 @@
             document.getElementById('selling-tips').textContent = result.selling_tips || 'Professional photography and detailed descriptions recommended';
 
             // Handle confidence score
-            const confidence = parseFloat(result.confidence) || 0.75;
+            let confidence = parseFloat(result.confidence);
+            if (isNaN(confidence)) {
+                confidence = 0.75;
+            }
+            if (confidence > 1) {
+                confidence = confidence / 100;
+            }
+            confidence = Math.min(confidence, 1);
             document.getElementById('confidence-text').textContent = Math.round(confidence * 100) + '%';
             document.getElementById('confidence-bar').style.width = (confidence * 100) + '%';
 

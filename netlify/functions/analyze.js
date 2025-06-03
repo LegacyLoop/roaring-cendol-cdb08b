@@ -36,7 +36,7 @@ exports.handler = async function (event, context) {
 
     // Call OpenAI API with proper model name
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Fixed the typo from "gpot-4oo"
+      model: "gpt-4o", // Using GPT-4o model
       messages: [
         {
           role: "user",
